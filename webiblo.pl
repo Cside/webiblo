@@ -7,7 +7,7 @@ use LWP::Simple;
 use URI;
 use HTML::TreeBuilder::XPath;
 use Text::Xslate;
-use Image::Resize;
+use Imager;
 
 my $style = HTML::Element->new('style');
 $style->attr('type', 'text/css');
@@ -30,11 +30,16 @@ if ( $book->{cover_image} ) {
     my $file = ($uri->path_segments)[-1];
     mirror($uri, "out/$file") unless -f "out/$file";
     $book->{cover_file} = $file;
-    my $image = Image::Resize->new("out/$file");
-    my $gd = $image->resize(600, 800);
-    open my $out, '>', "out/$file" or die $!;
-    print $out $gd->jpeg;
-    close $out;
+    
+    my $image = Imager->new;
+    $image->read(file => "out/$file") or die $image->errstr;
+    $image = $image->scale(
+        xpixels => 600,
+        ypixels => 800,
+        type    => 'min',
+        qtype   => 'mixing',
+    );
+    $image->write(file => "out/$file");
 }
 
 $book->{parts}->[0]->{chapters} = $book->{chapters} unless $book->{parts};
