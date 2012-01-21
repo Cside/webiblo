@@ -28,7 +28,7 @@ mkdir 'out' unless -d 'out';
 if ( $book->{cover_image} ) {
     my $uri  = URI->new($book->{cover_image});
     my $file = ($uri->path_segments)[-1];
-    mirror($uri, "out/$file") unless -f "out/$file";
+    mirror_or_die($uri, "out/$file") unless -f "out/$file";
     $book->{cover_file} = $file;
     
     my $image = Imager->new;
@@ -99,7 +99,7 @@ sub get_content {
     return if -f "tmp/$file";
 
     warn "Getting $object->{title} ...\n";
-    mirror($uri, "tmp/$file");
+    mirror_or_die($uri, "tmp/$file");
 
     my $tree = HTML::TreeBuilder::XPath->new;
     $tree->no_expand_entities(1);
@@ -190,4 +190,11 @@ sub set_startup_page {
             }
         }
     }
+}
+
+sub mirror_or_die {
+    my ($url, $file) = @_;
+    my $res_code = mirror($url, $file);
+    die "[$res_code] Failed to fetch $file." unless $res_code eq '200';
+    return $res_code;
 }
