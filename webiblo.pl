@@ -8,6 +8,7 @@ use URI;
 use HTML::TreeBuilder::XPath;
 use Text::Xslate;
 use Imager;
+use IPC::Cmd qw(run_forked);
 
 my $style = HTML::Element->new('style');
 $style->attr('type', 'text/css');
@@ -80,7 +81,18 @@ print $out $tx->render('opf.tx', $book);
 close $out;
 
 warn "Executing kindlegen ...\n";
-`kindlegen out/${book_title}.opf`;
+
+my $err_msg = "";
+run_forked(
+    "kindlegen out/${book_title}.opf",
+    +{
+        stdout_handler => sub {
+            my $msg = shift;
+            $err_msg .= $msg if ($msg =~ /^Error/ || $err_msg);
+        },
+    },
+);
+die "$err_msg\n" if $err_msg;
 
 exit;
 
